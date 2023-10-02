@@ -15,7 +15,7 @@ const {
 
 
 const register = async(req, res) => {
-    const {name, email, password} = req.body
+    const {name, email, password, hobby} = req.body
     const isEmailAlreadyExisted = await User.findOne({email : email});
     if(isEmailAlreadyExisted){
         throw new CustomError.BadRequestError('Email already existed')
@@ -23,12 +23,12 @@ const register = async(req, res) => {
     const isFirstAccount = (await User.countDocuments({})) === 0;
     const role = isFirstAccount ? 'admin' : 'user';
 
-    const user = await User.create({name, email,  password, role});
+    const user = await User.create({name, email,  password, role, hobby});
 
-    const tokenUser = createTokenUser(user);
-    attachCookiesToResponse({   res, user : tokenUser  });
+    const token = user.createJWT()
     res.status(StatusCodes.CREATED).json({
-        user : tokenUser
+      user :  user,
+       token
     });
 };
 
@@ -52,11 +52,12 @@ const logIn = async(req, res) => {
         throw new CustomError.UnauthenticatedError('Inavlid Credentials');
     };
 
-    const tokenUser = await createTokenUser(user);
-    attachCookiesToResponse({res, user : tokenUser});
+    const token = user.createJWT();
+
 
     res.status(StatusCodes.OK).json({
-        user : tokenUser
+        user : user,
+        token
     })
 
     res.status(200).json({
@@ -67,10 +68,6 @@ const logIn = async(req, res) => {
 
 
 const logOut = async(req, res) => {
-    res.cookie('accessToken','logout', {
-        httpOnly : true,
-        expires : new Date(Date.now() + 1000),
-    });
     res.status(StatusCodes.OK).json({
         msg : "LogOut Successfuly"
     })

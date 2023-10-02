@@ -10,6 +10,12 @@ const {
 
 
 const getAllUser = async(req, res) => {
+    req.body.user = req.user.userId;
+    const user = await User.findOne({_id : req.user.userId})
+    const isAdmin = (user.role === 'admin' ? true : false)
+    if(!isAdmin){
+      throw new CustomError.UnAuthorizeError("Admin routes only")
+    }
     const users = await User.find({role : 'user'}).select('-password');
     res.status(StatusCodes.OK).json({users});
 };
@@ -40,9 +46,9 @@ const showCurrentUser = async(req, res) => {
 
 
 const updateUser = async(req, res) => {
-    const {email, name} = req.body;
-
-    if(!email || !name){
+    const {email, name, hobby} = req.body;
+    console.log(name);
+    if(!email || !name || !hobby){
         throw new CustomError.BadRequestError("Please provide all values");
     }
 
@@ -53,13 +59,13 @@ const updateUser = async(req, res) => {
 
     user.email = email;
     user.name = name;
+    user.hobby = hobby;
 
     await user.save();
 
 
-    const tokenUser = createTokenUser(user);
-  attachCookiesToResponse({ res, user: tokenUser });
-  res.status(StatusCodes.OK).json({ user: tokenUser });
+    const token = user.createJWT()
+  res.status(StatusCodes.OK).json({ user, token});
 };
 
 
@@ -79,18 +85,41 @@ const updatePassword = async(req, res) => {
     user.password = newPassword;
 
     await user.save();
-
-
-    res.status(StatusCodes.OK).json({
-        msg : 'Success! Password updated.'
-    })
-
-
+    const token = user.createJWT();
 
     res.status(StatusCodes.OK).json({
-        msg : "Update password"
+        msg : 'Success! Password updated.',
+        user,
+        token
     })
+
 };
+
+
+const resetPassword = async(req, res) => {
+    const {email, hobby, newPassword} = req.body;
+
+    const user = await User.findOne({email : email});
+
+    if(!user){
+        throw new CustomError.UnauthenticatedError("User does not exist")
+    };
+
+    if(user.hobby !== hobby){
+        throw new CustomError.UnauthenticatedError("User does not exist")
+    };
+
+    user.password = newPassword;
+
+    await user.save();
+
+    const token = user.createJWT()
+
+    res.status(StatusCodes.OK).json({
+        user, token
+    })
+
+}
 
 
 module.exports = {
@@ -98,5 +127,6 @@ module.exports = {
     getSingleUser,
     updateUser,
     updatePassword,
-    showCurrentUser
+    showCurrentUser,
+    resetPassword,
 }

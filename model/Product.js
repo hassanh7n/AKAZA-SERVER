@@ -18,22 +18,31 @@ const ProductSchema = new mongoose.Schema({
         required : [true, "Please provide product description"],
         maxlength : [1000, "description cannot be more than 1000 characters"],
     },
-    image : {
-        type : String,
-        default : '/uploads/example.jpeg'
-    },
+    images : [
+        {
+            src: String,
+        },
+        {
+            src: String,
+        },
+        {
+            src: String,
+        },
+        {
+            src: String,
+        },
+        {
+            src: String,
+        },
+    ],
     category: {
         type : String,
         required : [true, 'Please provide product category'],
-        enum : ['office', 'kitchen', 'bedroom'],
+        enum : ['clothing', 'jewellery', 'shoes', 'other'],
     },
     company : {
         type : String,
-        required : [true, "please provide company name"],
-        enum : {
-            values : ['ikea', 'liddy', 'marcos'],
-            message : '{VALUE} is not supported',
-        },
+        required : [true, "please provide company name"]
     },
     colors : {
         type : [String],
@@ -45,8 +54,8 @@ const ProductSchema = new mongoose.Schema({
         defalut : false,
     },
     freeShipping : {
-        type : Boolean,
-        default : false,
+        type : String,
+        default : 'false',
     },
     inventory : {
         type : Number,
